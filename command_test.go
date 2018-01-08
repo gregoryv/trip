@@ -34,7 +34,6 @@ func TestCommand_Output(t *testing.T) {
 		{`{"Name":"trip"}`, "trip"},
 		{`"Name":"trip"}`, ""}, // broken json
 	}
-	// Model to store response in
 
 	for _, d := range data {
 		// A service responding to our requests
@@ -45,6 +44,7 @@ func TestCommand_Output(t *testing.T) {
 		// Send request
 		request, _ := http.NewRequest("GET", ts.URL, nil)
 		cmd := trip.NewCommand(request)
+		// Model to store response in		
 		var model struct{ Name string }
 		cmd.Output(&model)
 		// Verify
@@ -59,7 +59,8 @@ func TestCommand_Run(t *testing.T) {
 		url           string
 		expStatusCode int
 	}{
-		{"http://nothingthere", http.StatusServiceUnavailable},
+		{"http://badhost", http.StatusServiceUnavailable},		
+		{"http://localhost:1234", 590},
 		{"http://example.com", http.StatusOK},
 	}
 
@@ -67,9 +68,9 @@ func TestCommand_Run(t *testing.T) {
 		request, err := http.NewRequest("GET", d.url, nil)
 		fatal(t, err)
 		cmd := trip.NewCommand(request)
-		statusCode, _ := cmd.Run()
+		statusCode, err := cmd.Run()
 		if d.expStatusCode != statusCode {
-			t.Errorf("Run() expected to return statusCode %v, got %v", d.expStatusCode, statusCode)
+			t.Errorf("GET %q expected to return statusCode %v, got %v: %s", d.url, d.expStatusCode, statusCode, err)
 		}
 	}
 }

@@ -43,7 +43,7 @@ func (cmd *Command) Run() (statusCode int, err error) {
 }
 
 // Output sends the request and does a status validation against considered status codes.
-// Failing to send the request altogether results in a 599
+// Failing to send the request altogether results in a 590. Parsing errors result in 591
 func (cmd *Command) Output(model interface{}) (statusCode int, err error) {
 	cmd.Response, err = cmd.Client.Do(cmd.Request)
 	if !cmd.IsOk(cmd.Response) {
@@ -57,11 +57,11 @@ func (cmd *Command) Output(model interface{}) (statusCode int, err error) {
 		var body []byte
 		body, err = ioutil.ReadAll(cmd.Response.Body)
 		if err != nil {
-			return 590, err
+			return 591, err
 		}
 		err = json.Unmarshal([]byte(body), model)
 		if err != nil {
-			return 590, err
+			return 591, err
 		}
 	}
 	return cmd.Response.StatusCode, err
