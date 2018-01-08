@@ -59,8 +59,8 @@ func TestCommand_Run(t *testing.T) {
 		url           string
 		expStatusCode int
 	}{
-		{"http://nothing", http.StatusServiceUnavailable},
-		{"http://axis.com", http.StatusOK},
+		{"http://nothingthere", http.StatusServiceUnavailable},
+		{"http://example.com", http.StatusOK},
 	}
 
 	for _, d := range data {
