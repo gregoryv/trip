@@ -37,6 +37,7 @@ func TestCommand_Output(t *testing.T) {
 		statusCode    int
 		ok            bool
 	}{
+		{``, "", 200, false},
 		{`{"Name":"trip"}`, "trip", 200, true},
 		{`{"Name":"trip"}`, "trip", 404, false},
 		{`"Name":"trip"}`, "", 200, false}, // broken json
@@ -60,13 +61,13 @@ func TestCommand_Output(t *testing.T) {
 		_, err := cmd.Output(&model)
 		// Verify
 		if d.ok && model.Name != d.expName {
-			t.Errorf("Output(model) should unmarshal the json response")
+			t.Errorf("Output(model) should be ok for %q", d.body)
 		}
 		if d.ok && err != nil {
-			t.Errorf("Output(model) expected towork, got %s", err)
+			t.Errorf("Output(model) expected to work for %q, got %s", d.body, err)
 		}
 		if !d.ok && err == nil {
-			t.Errorf("Output(model) expected to fail")
+			t.Errorf("Output(model) expected to fail for %q", d.body)
 		}
 	}
 }

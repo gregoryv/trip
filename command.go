@@ -48,10 +48,7 @@ func parseJson(body io.ReadCloser, model interface{}) (err error) {
 	defer body.Close()
 	// Default parser is json to model
 	var buf []byte
-	buf, err = ioutil.ReadAll(body)
-	if err != nil {
-		return err
-	}
+	buf, _ = ioutil.ReadAll(body) // Ignore the error
 	err = json.Unmarshal(buf, model)
 	return
 }
