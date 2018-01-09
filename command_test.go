@@ -9,6 +9,10 @@ import (
 	"testing"
 )
 
+func TestCommand_IsOk(t *testing.T) {
+
+}
+
 func TestCommand_Dump(t *testing.T) {
 	request, _ := http.NewRequest("GET", "http://example.com/", nil)
 	fullCmd := trip.NewCommand(request)
@@ -30,26 +34,39 @@ func TestCommand_Dump(t *testing.T) {
 func TestCommand_Output(t *testing.T) {
 	data := []struct {
 		body, expName string
+		statusCode    int
+		ok            bool
 	}{
-		{`{"Name":"trip"}`, "trip"},
-		{`"Name":"trip"}`, ""}, // broken json
+		{`{"Name":"trip"}`, "trip", 200, true},
+		{`{"Name":"trip"}`, "trip", 404, false},
+		{`"Name":"trip"}`, "", 200, false}, // broken json
 	}
 
 	for _, d := range data {
 		// A service responding to our requests
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if d.statusCode != 200 {
+				w.WriteHeader(d.statusCode)
+				return
+			}
 			fmt.Fprintln(w, d.body)
 		}))
 		defer ts.Close()
 		// Send request
 		request, _ := http.NewRequest("GET", ts.URL, nil)
 		cmd := trip.NewCommand(request)
-		// Model to store response in		
+		// Model to store response in
 		var model struct{ Name string }
-		cmd.Output(&model)
+		_, err := cmd.Output(&model)
 		// Verify
-		if model.Name != d.expName {
+		if d.ok && model.Name != d.expName {
 			t.Errorf("Output(model) should unmarshal the json response")
+		}
+		if d.ok && err != nil {
+			t.Errorf("Output(model) expected towork, got %s", err)
+		}
+		if !d.ok && err == nil {
+			t.Errorf("Output(model) expected to fail")
 		}
 	}
 }
@@ -59,8 +76,8 @@ func TestCommand_Run(t *testing.T) {
 		url           string
 		expStatusCode int
 	}{
-		{"http://badhost", http.StatusServiceUnavailable},		
-		{"http://localhost:1234", 590},
+		{"http://badhost", trip.BadResponse}, // With go1.8.2 this is 590
+		{"http://localhost:1234", trip.BadResponse},
 		{"http://example.com", http.StatusOK},
 	}
 
