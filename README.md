@@ -7,7 +7,7 @@
 ## Quick start
 
     go get github.com/gregoryv/trip
-	
+
 ## The round-trip pattern
 
 A round-trip pattern is basically

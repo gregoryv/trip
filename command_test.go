@@ -9,10 +9,6 @@ import (
 	"testing"
 )
 
-func TestCommand_IsOk(t *testing.T) {
-
-}
-
 func TestCommand_Dump(t *testing.T) {
 	request, _ := http.NewRequest("GET", "http://example.com/", nil)
 	fullCmd := trip.NewCommand(request)
@@ -74,21 +70,24 @@ func TestCommand_Output(t *testing.T) {
 
 func TestCommand_Run(t *testing.T) {
 	data := []struct {
-		url           string
-		expStatusCode int
+		url string
+		ok  bool
 	}{
-		{"http://badhost", trip.BadResponse}, // With go1.8.2 this is 590
-		{"http://localhost:1234", trip.BadResponse},
-		{"http://example.com", http.StatusOK},
+		{"http://badhost", false},
+		{"http://localhost:1234", false},
+		{"http://example.com", true},
 	}
 
 	for _, d := range data {
 		request, err := http.NewRequest("GET", d.url, nil)
 		fatal(t, err)
 		cmd := trip.NewCommand(request)
-		statusCode, err := cmd.Run()
-		if d.expStatusCode != statusCode {
-			t.Errorf("GET %q expected to return statusCode %v, got %v: %s", d.url, d.expStatusCode, statusCode, err)
+		_, err = cmd.Run()
+		if d.ok && err != nil {
+			t.Errorf("GET %q expected to be ok: %s", d.url, err)
+		}
+		if !d.ok && err == nil {
+			t.Errorf("GET %q expected fail", d.url)
 		}
 	}
 }
