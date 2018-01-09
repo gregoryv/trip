@@ -26,6 +26,8 @@ type Command struct {
 	// Parse should convert the response into the given model. By default json.Unmarshal is
 	// used. Parse should close the reader when done or on error.
 	Parse func(io.ReadCloser, interface{}) error
+
+	lastError error
 }
 
 // NewCommand returns a command using the http.DefaultClient.
@@ -61,6 +63,7 @@ func (cmd *Command) Run() (statusCode int, err error) {
 // Output sends the request and does a status validation against considered status codes.
 // Failing to send the request altogether results in a 590. Parsing errors result in 591
 func (cmd *Command) Output(model interface{}) (statusCode int, err error) {
+	defer func() { cmd.lastError = err }()
 	cmd.Response, err = cmd.Client.Do(cmd.Request)
 	if err != nil {
 		return BadResponse, err
@@ -88,4 +91,8 @@ func (cmd *Command) Dump(w io.Writer, body bool) {
 		dump, _ = httputil.DumpResponse(cmd.Response, body)
 		fmt.Fprintf(w, "%s\n", dump)
 	}
+}
+
+func (cmd *Command) Error() string {
+	return cmd.lastError.Error()
 }

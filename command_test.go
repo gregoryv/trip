@@ -89,6 +89,9 @@ func TestCommand_Run(t *testing.T) {
 		if !d.ok && err == nil {
 			t.Errorf("GET %q expected fail", d.url)
 		}
+		if !d.ok && cmd.Error() == "" {
+			t.Errorf("Error() should not return empty string")
+		}
 	}
 }
 
