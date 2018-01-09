@@ -93,6 +93,6 @@ func (cmd *Command) Dump(w io.Writer, body bool) {
 	}
 }
 
-func (cmd *Command) Error() string {
+func (cmd Command) Error() string {
 	return cmd.lastError.Error()
 }
