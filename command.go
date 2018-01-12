@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
+	"time"
 )
 
 const BadResponse = 590
@@ -27,6 +28,8 @@ type Command struct {
 	// used. Parse should close the reader when done or on error.
 	Parse func(io.ReadCloser, interface{}) error
 
+	// Duration to wait before next retry
+	Pause     time.Duration
 	lastError error
 }
 
@@ -36,6 +39,7 @@ func NewCommand(request *http.Request) (cmd *Command) {
 	cmd = &Command{
 		Client:  http.DefaultClient,
 		Request: request,
+		Pause:   time.Second * 2,
 	}
 	// A response that is not ok will result in a BadResponse in the execution chain
 	cmd.IsOk = func(r *http.Response) bool {
@@ -56,28 +60,40 @@ func parseJson(body io.ReadCloser, model interface{}) (err error) {
 }
 
 // Run, calls the Output method with no model
-func (cmd *Command) Run() (statusCode int, err error) {
+func (cmd *Command) Run() (err error) {
 	return cmd.Output(nil)
+}
+
+// Try, runs command with Run() and retries if it fails
+func (cmd *Command) Try(times int) (err error) {
+	for i := times; i > 0; i-- {
+		err = cmd.Run()
+		if err == nil {
+			break
+		}
+		time.Sleep(cmd.Pause)
+	}
+	return
 }
 
 // Output sends the request and does a status validation against considered status codes.
 // Failing to send the request altogether results in a 590. Parsing errors result in 591
-func (cmd *Command) Output(model interface{}) (statusCode int, err error) {
+func (cmd *Command) Output(model interface{}) (err error) {
 	defer func() { cmd.lastError = err }()
 	cmd.Response, err = cmd.Client.Do(cmd.Request)
 	if err != nil {
-		return BadResponse, err
+		return err
 	}
 	if !cmd.IsOk(cmd.Response) {
-		return cmd.Response.StatusCode, fmt.Errorf("%s", cmd.Response.Status)
+		return fmt.Errorf("%s", cmd.Response.Status)
 	}
 	if model != nil {
 		err = cmd.Parse(cmd.Response.Body, model)
 		if err != nil {
-			return 591, err
+			return err
 		}
 	}
-	return cmd.Response.StatusCode, err
+	return err
 }
 
 // Dump writes request and response information, if body has already been read body=true has no affect.

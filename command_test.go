@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestCommand_Dump(t *testing.T) {
@@ -54,7 +55,7 @@ func TestCommand_Output(t *testing.T) {
 		cmd := trip.NewCommand(request)
 		// Model to store response in
 		var model struct{ Name string }
-		_, err := cmd.Output(&model)
+		err := cmd.Output(&model)
 		// Verify
 		if d.ok && model.Name != d.expName {
 			t.Errorf("Output(model) should be ok for %q", d.body)
@@ -72,17 +73,26 @@ func TestCommand_Run(t *testing.T) {
 	data := []struct {
 		url string
 		ok  bool
+		run bool // if true Run is used, otherwise Try
 	}{
-		{"http://badhost", false},
-		{"http://localhost:1234", false},
-		{"http://example.com", true},
+		{"http://badhost", false, true},
+		{"http://localhost:1234", false, true},
+		{"http://example.com", true, true},
+		{"http://example.com", true, false},
+		{"http://badhost", false, false},
 	}
 
 	for _, d := range data {
 		request, err := http.NewRequest("GET", d.url, nil)
 		fatal(t, err)
 		cmd := trip.NewCommand(request)
-		_, err = cmd.Run()
+		cmd.Pause = time.Microsecond
+		if d.run {
+			err = cmd.Run()
+		} else {
+			err = cmd.Try(1)
+		}
+
 		if d.ok && err != nil {
 			t.Errorf("GET %q expected to be ok: %s", d.url, err)
 		}
@@ -100,7 +110,7 @@ func TestCommand_Run_brokenClient(t *testing.T) {
 	fatal(t, err)
 	cmd := trip.NewCommand(request)
 	cmd.Client = &BrokenClient{}
-	_, err = cmd.Run()
+	err = cmd.Run()
 	if err == nil {
 		t.Error("Run() should fail")
 	}

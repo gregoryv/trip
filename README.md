@@ -30,7 +30,7 @@ Do the trip
 
     statusCode, err := cmd.Run()
 	// or if you want the response parsed
-	_, err := cmd.Output(&model)
+	err := cmd.Output(&model)
 
 ## When to use
 
