@@ -2,12 +2,13 @@ package trip_test
 
 import (
 	"fmt"
-	"github.com/gregoryv/trip"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/gregoryv/trip"
 )
 
 func TestCommand_Dump(t *testing.T) {
